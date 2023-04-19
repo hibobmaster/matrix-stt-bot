@@ -82,6 +82,8 @@ Remove `import_keys_path` and `import_keys_password` options
 
 Set a correct `room_id` or remove it if you hope the bot to work in the rooms it is in.
 
+Tips: if bot exits because `RuntimeError: Unable to open file 'model.bin' in model`, try `rm -r models` then relaunch the container.
+
 5. Finally
 
 Launch the container
