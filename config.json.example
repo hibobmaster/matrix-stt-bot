@@ -1,0 +1,10 @@
+{
+    "homeserver": "https://xxxxx.xxxx.xxxx",
+    "user_id": "@xxxx:matrix.org",
+    "password": "xxxxxxxxxx",
+    "device_id": "GMIAZSVFF",
+    "room_id": "!xxxxxxxx:xxx.xxx.xxx",
+    "model_size": "base",
+    "import_keys_path": "element-keys.txt",
+    "import_keys_password": "xxxxxxxxxxxx"
+}
