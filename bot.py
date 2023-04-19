@@ -10,7 +10,7 @@ from nio import (AsyncClient, AsyncClientConfig, InviteMemberEvent, JoinError,
                  KeyVerificationCancel, KeyVerificationEvent, DownloadError,
                  KeyVerificationKey, KeyVerificationMac, KeyVerificationStart,
                  LocalProtocolError, LoginResponse, MatrixRoom, MegolmEvent,
-                 RoomMessageAudio, RoomEncryptedAudio, ToDeviceError, crypto, 
+                 RoomMessageAudio, RoomEncryptedAudio, ToDeviceError, crypto,
                  EncryptionError)
 from nio.store.database import SqliteStore
 
@@ -18,8 +18,6 @@ from faster_whisper import WhisperModel
 
 from log import getlogger
 from send_message import send_room_message
-
-from unsync import unsync
 
 logger = getlogger()
 
@@ -82,9 +80,10 @@ class Bot:
             self.num_workers = 1
 
         if download_root is None:
-            self.download_root = "models"
-            if not os.path.exists("models"):
-                os.mkdir("models")
+            cwd = os.getcwd()
+            self.download_root = os.path.join(cwd, "models")
+            if not os.path.exists(self.download_root):
+                os.mkdir(self.download_root)
 
         # initialize AsyncClient object
         self.store_path = os.getcwd()
@@ -112,10 +111,11 @@ class Bot:
         # intialize whisper model
         if not os.path.exists(os.path.join(self.download_root, "model.txt")):
             # that means we have not downloaded the model yet
-            logger.info("Model downloading")
+            logger.info("Model downloading......")
             self.model_size_or_path = self.model_size
             with open(os.path.join(self.download_root, "model.txt"), "w") as f:
                 f.write(self.model_size)
+                f.close()
         else:
             # model exists
             f = open(os.path.join(self.download_root, "model.txt"), "r")
@@ -508,7 +508,8 @@ class Bot:
         if isinstance(resp, EncryptionError):
             logger.error(f"import_keys failed with {resp}")
         else:
-            logger.info(f"import_keys success, please remove import_keys configuration!!!")
+            logger.info(
+                f"import_keys success, please remove import_keys configuration!!!")
 
     # whisper function
     def transcribe(self, filename: str) -> str:
@@ -571,7 +572,7 @@ async def main():
     if need_import_keys:
         logger.info("start import_keys process, this may take a while...")
         await bot.import_keys()
-    
+
     await bot.sync_forever()
 
 if __name__ == '__main__':
