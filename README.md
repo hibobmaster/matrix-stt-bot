@@ -99,3 +99,6 @@ docker compose up -d
 1. https://github.com/guillaumekln/faster-whisper
 2. https://github.com/poljar/matrix-nio
 3. https://github.com/8go/matrix-commander
+<a href="https://jb.gg/OpenSourceSupport" target="_blank">
+<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo." width="200" height="200">
+</a>
