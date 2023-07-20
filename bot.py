@@ -109,30 +109,8 @@ class Bot:
             self.to_device_callback, (KeyVerificationEvent, ))
 
         # intialize whisper model
-        if not os.path.exists(os.path.join(self.download_root, "model.txt")):
-            # that means we have not downloaded the model yet
-            logger.info("Model downloading......")
-            self.model_size_or_path = self.model_size
-            with open(os.path.join(self.download_root, "model.txt"), "w") as f:
-                f.write(self.model_size)
-                f.close()
-        else:
-            # model exists
-            f = open(os.path.join(self.download_root, "model.txt"), "r")
-            old_model = f.read()
-            if old_model != self.model_size:
-                # model size changed
-                self.model_size_or_path = self.model_size
-                f.close()
-                with open(os.path.join(self.download_root, "model.txt"), "w") as f:
-                    f.write(self.model_size)
-                    f.close()
-            else:
-                # use existed model
-                self.model_size_or_path = self.download_root
-
         self.model = WhisperModel(
-            model_size_or_path=self.model_size_or_path,
+            model_size_or_path=self.model_size,
             device=self.device,
             compute_type=self.compute_type,
             cpu_threads=self.cpu_threads,
