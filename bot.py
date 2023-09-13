@@ -143,6 +143,10 @@ class Bot:
             download_root=self.download_root,
         )
 
+        # create output folder
+        if not os.path.exists("output"):
+            os.mkdir("output")
+
     async def close(self, task: asyncio.Task = None) -> None:
         await self.client.close()
         task.cancel()
@@ -167,65 +171,85 @@ class Bot:
         # sender_id
         sender_id = event.sender
 
-        # construct filename
-        if not os.path.exists("output"):
-            os.mkdir("output")
-        ext = os.path.splitext(event.body)[-1]
-        filename = os.path.join("output", str(uuid.uuid4()) + ext)
+        if isinstance(event, RoomMessageAudio) or isinstance(event, RoomEncryptedAudio):
+            try:
+                asyncio.create_task(
+                    self.main_function(event, room_id, sender_id, reply_to_event_id)
+                )
+            except Exception as e:
+                logger.error(e, exc_info=True)
 
-        try:
-            if isinstance(event, RoomMessageAudio):  # for audio event
-                mxc = event.url  # audio mxc
-                # download unencrypted audio file
-                resp = await self.download_mxc(mxc=mxc)
-                if isinstance(resp, DownloadError):
-                    logger.error("Download of media file failed")
-                else:
-                    media_data = resp.body
+    async def main_function(
+        self,
+        event: Union[RoomMessageAudio, RoomEncryptedAudio],
+        room_id: str,
+        sender_id: str,
+        reply_to_event_id: str,
+    ):
+        media_type = None
+        if isinstance(event, RoomMessageAudio):  # for audio event
+            # construct filename
+            ext = os.path.splitext(event.body)[-1]
+            filename = os.path.join("output", str(uuid.uuid4()) + ext)
 
-                    async with aiofiles.open(filename, "wb") as f:
-                        await f.write(media_data)
-                        await f.close()
+            mxc = event.url  # audio mxc
+            # download unencrypted audio file
+            resp = await self.download_mxc(mxc=mxc)
+            if isinstance(resp, DownloadError):
+                logger.error("Download of media file failed")
+            else:
+                media_data = resp.body
+                media_type = resp.content_type
 
-            if isinstance(event, RoomEncryptedAudio):  # for encrypted audio event
-                mxc = event.url  # audio mxc
-                # download encrypted audio file
-                resp = await self.download_mxc(mxc=mxc)
-                if isinstance(resp, DownloadError):
-                    logger.error("Download of media file failed")
-                else:
-                    media_data = resp.body
-                    async with aiofiles.open(filename, "wb") as f:
-                        await f.write(
-                            crypto.attachments.decrypt_attachment(
-                                media_data,
-                                event.source["content"]["file"]["key"]["k"],
-                                event.source["content"]["file"]["hashes"]["sha256"],
-                                event.source["content"]["file"]["iv"],
-                            )
+                async with aiofiles.open(filename, "wb") as f:
+                    await f.write(media_data)
+                    await f.close()
+
+        elif isinstance(event, RoomEncryptedAudio):  # for encrypted audio event
+            # construct filename
+            ext = os.path.splitext(event.body)[-1]
+            filename = os.path.join("output", str(uuid.uuid4()) + ext)
+
+            mxc = event.url  # audio mxc
+            # download encrypted audio file
+            resp = await self.download_mxc(mxc=mxc)
+            if isinstance(resp, DownloadError):
+                logger.error("Download of media file failed")
+            else:
+                media_data = resp.body
+                media_type = resp.content_type
+
+                async with aiofiles.open(filename, "wb") as f:
+                    await f.write(
+                        crypto.attachments.decrypt_attachment(
+                            media_data,
+                            event.source["content"]["file"]["key"]["k"],
+                            event.source["content"]["file"]["hashes"]["sha256"],
+                            event.source["content"]["file"]["iv"],
                         )
-                        await f.close()
-        except Exception as e:
-            logger.error(e, exc_info=True)
+                    )
+                    await f.close()
 
-        # use whisper to transribe audio to text
-        try:
-            await self.client.room_typing(room_id)
-            message = self.transcribe(filename)
-            await send_room_message(
-                client=self.client,
-                room_id=room_id,
-                reply_message=message,
-                sender_id=sender_id,
-                reply_to_event_id=reply_to_event_id,
-            )
+        # transcribe voice message only
+        if media_type == "audio/ogg":
+            # use whisper to transribe audio to text
+            try:
+                await self.client.room_typing(room_id)
+                message = await asyncio.to_thread(self.transcribe, filename)
+                await send_room_message(
+                    client=self.client,
+                    room_id=room_id,
+                    reply_message=message,
+                    sender_id=sender_id,
+                    reply_to_event_id=reply_to_event_id,
+                )
 
-        except Exception as e:
-            logger.error(e)
+            except Exception as e:
+                logger.error(e)
 
-        # remove audio file
-        logger.info("audio file removed")
-        os.remove(filename)
+            # remove audio file
+            logger.info("audio file removed")
+            os.remove(filename)
 
     # message_callback decryption_failure event
     async def decryption_failure(self, room: MatrixRoom, event: MegolmEvent) -> None:
@@ -233,7 +257,8 @@ class Bot:
             return
 
         logger.error(
-            f"Failed to decrypt message: {event.event_id} from {event.sender} in {room.room_id}\n"
+            f"Failed to decrypt message: {event.event_id} from {event.sender} \
+            in {room.room_id}\n"
             + "Please make sure the bot current session is verified"
         )
 
@@ -516,7 +541,7 @@ class Bot:
             logger.error(f"import_keys failed with {resp}")
         else:
             logger.info(
-                f"import_keys success, please remove import_keys configuration!!!"
+                "import_keys success, please remove import_keys configuration!!!"
             )
 
     # whisper function

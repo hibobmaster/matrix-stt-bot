@@ -1,4 +1,4 @@
-FROM python:3.10-bullseye as base
+FROM python:3.11-bullseye as base
 
 FROM base as pybuilder
 
@@ -20,7 +20,7 @@ RUN set -eux; \
         libolm-dev \
         ; \
         rm -rf /var/lib/apt/lists/*
-        
+
 COPY --from=pybuilder /root/.local /usr/local
 COPY . /app
 

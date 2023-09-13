@@ -59,7 +59,7 @@ jobs:
         id: meta2
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/hibobmaster/matrix-stt-bot 
+          images: ghcr.io/hibobmaster/matrix-stt-bot
           tags: |
             type=raw,value=latest
             type=sha,format=long

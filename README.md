@@ -19,7 +19,7 @@ For explainations and complete parameter list see: https://github.com/hibobmaste
 
 1. Create `config.json`
 
-Tips: set a non-exist `room_id` at the first time to prevent bot handling historical message which may mess your room up.  
+Tips: set a non-exist `room_id` at the first time to prevent bot handling historical message which may mess your room up.
 ```json
 {
     "homeserver": "https://matrix.org",
