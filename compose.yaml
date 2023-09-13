@@ -2,7 +2,7 @@ services:
   app:
     image: ghcr.io/hibobmaster/matrix-stt-bot:latest
     container_name: matrix-stt-bot
-    restart: always
+    restart: unless-stopped
     # build:
     #   context: .
     #   dockerfile: ./Dockerfile

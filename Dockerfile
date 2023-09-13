@@ -27,4 +27,4 @@ COPY . /app
 
 FROM runner
 WORKDIR /app
-CMD ["python", "bot.py"]
+CMD ["python", "src/bot.py"]
