@@ -231,7 +231,7 @@ class Bot:
                     await f.close()
 
         # transcribe voice message only
-        if media_type == "audio/ogg":
+        if media_type.startswith("audio/"):
             # use whisper to transribe audio to text
             try:
                 await self.client.room_typing(room_id)
@@ -250,6 +250,8 @@ class Bot:
             # remove audio file
             logger.info("audio file removed")
             os.remove(filename)
+        else:
+            logger.warning(f"Ignoring unsupported media type {media_type}")
 
     # message_callback decryption_failure event
     async def decryption_failure(self, room: MatrixRoom, event: MegolmEvent) -> None:
