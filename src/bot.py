@@ -217,7 +217,7 @@ class Bot:
                 logger.error("Download of media file failed")
             else:
                 media_data = resp.body
-                media_type = resp.content_type
+                media_type = event.mime_type
 
                 async with aiofiles.open(filename, "wb") as f:
                     await f.write(
