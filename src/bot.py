@@ -219,8 +219,6 @@ class Bot:
                 logger.error("Download of media file failed")
             else:
                 media_data = resp.body
-
-                # Encrypted messages 
                 media_type = event.mimetype
 
                 async with aiofiles.open(filename, "wb") as f:
