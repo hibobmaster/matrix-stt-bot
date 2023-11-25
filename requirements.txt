@@ -1,4 +1,4 @@
 aiofiles
 aiohttp
-faster-whisper
+faster-whisper == 0.10.0
 matrix-nio[e2e]
