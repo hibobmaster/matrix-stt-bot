@@ -217,7 +217,7 @@ class Bot:
                 logger.error("Download of media file failed")
             else:
                 media_data = resp.body
-                media_type = resp.content_type
+                media_type = event.mimetype
 
                 async with aiofiles.open(filename, "wb") as f:
                     await f.write(
@@ -230,8 +230,14 @@ class Bot:
                     )
                     await f.close()
 
-        # transcribe voice message only
-        if media_type == "audio/ogg":
+        # Whatsapp audio messages are sent as audio/ogg.
+        # Matrix sends its messages as audio/mp4 but the filename starts with
+        # "recording".
+        # Ignore the other formats so we don't try to decode random music.
+        evt_filename = event.source["content"].get("filename", "")
+        if media_type == "audio/ogg" or (
+            media_type.startswith("audio/") and evt_filename.startswith("recording")
+        ):
             # use whisper to transribe audio to text
             try:
                 await self.client.room_typing(room_id)
@@ -250,6 +256,8 @@ class Bot:
             # remove audio file
             logger.info("audio file removed")
             os.remove(filename)
+        else:
+            logger.warning(f"Ignoring unsupported media type {media_type}")
 
     # message_callback decryption_failure event
     async def decryption_failure(self, room: MatrixRoom, event: MegolmEvent) -> None:
