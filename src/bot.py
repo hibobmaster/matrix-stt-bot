@@ -187,7 +187,6 @@ class Bot:
         reply_to_event_id: str,
     ):
         media_type = None
-        transcribe = False
         if isinstance(event, RoomMessageAudio):  # for audio event
             # construct filename
             ext = os.path.splitext(event.body)[-1]
@@ -201,7 +200,6 @@ class Bot:
             else:
                 media_data = resp.body
                 media_type = resp.content_type
-
 
                 async with aiofiles.open(filename, "wb") as f:
                     await f.write(media_data)
@@ -237,11 +235,9 @@ class Bot:
         # "recording".
         # Ignore the other formats so we don't try to decode random music.
         evt_filename = event.source["content"].get("filename", "")
-        if (media_type == "audio/ogg" or 
-            (
-              media_type.startswith("audio/") and evt_filename.startswith(
-                  "recording")
-            )):
+        if media_type == "audio/ogg" or (
+            media_type.startswith("audio/") and evt_filename.startswith("recording")
+        ):
             # use whisper to transribe audio to text
             try:
                 await self.client.room_typing(room_id)
