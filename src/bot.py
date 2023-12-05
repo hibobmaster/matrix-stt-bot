@@ -27,6 +27,7 @@ from nio import (
     ToDeviceError,
     crypto,
     EncryptionError,
+    WhoamiError,
 )
 from nio.store.database import SqliteStore
 
@@ -47,6 +48,7 @@ class Bot:
         room_id: Union[str, None] = None,
         password: Union[str, None] = None,
         access_token: Union[str, None] = None,
+        device_name: Union[str, None] = None,
         import_keys_path: Optional[str] = None,
         import_keys_password: Optional[str] = None,
         model_size: str = "tiny",
@@ -68,6 +70,7 @@ class Bot:
         self.user_id = user_id
         self.password = password
         self.access_token = access_token
+        self.device_name = device_name if device_name is not None else "matrix-stt-bot"
         self.device_id = device_id
         self.room_id = room_id
         self.import_keys_path = import_keys_path
@@ -518,15 +521,34 @@ class Bot:
     # bot login
     async def login(self) -> None:
         if self.access_token is not None:
-            logger.info("Login via access_token")
-        else:
-            logger.info("Login via password")
+            self.client.restore_login(
+                user_id=self.user_id,
+                device_id=self.device_id,
+                access_token=self.access_token,
+            )
             try:
-                resp = await self.client.login(password=self.password)
+                resp = await self.client.whoami()
+            except Exception as e:
+                await self.client.close()
+                logger.error(e, exc_info=True)
+                sys.exit(1)
+            if isinstance(resp, WhoamiError):
+                logger.error(
+                    f"Login Failed with {resp}, please check your access_token"
+                )
+                sys.exit(1)
+            logger.info("Successfully login via access_token")
+
+        else:
+            try:
+                resp = await self.client.login(
+                    password=self.password, device_name=self.device_name
+                )
                 if not isinstance(resp, LoginResponse):
                     logger.error("Login Failed")
                     print(f"Login Failed: {resp}")
                     sys.exit(1)
+                logger.info("Successfully login via password")
             except Exception as e:
                 logger.error(f"Error: {e}", exc_info=True)
 
@@ -549,7 +571,7 @@ class Bot:
             logger.error(f"import_keys failed with {resp}")
         else:
             logger.info(
-                "import_keys success, please remove import_keys configuration!!!"
+                "import_keys success, you can remove import_keys configuration!"
             )
 
     # whisper function
@@ -632,6 +654,8 @@ async def main():
             getattr(signal, signame), lambda: asyncio.create_task(bot.close(sync_task))
         )
 
+    if bot.client.should_upload_keys:
+        await bot.client.keys_upload()
     await sync_task
 
 
