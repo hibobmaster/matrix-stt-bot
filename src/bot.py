@@ -627,8 +627,8 @@ async def main():
             model_size=os.environ.get("MODEL_SIZE"),
             device=os.environ.get("DEVICE"),
             compute_type=os.environ.get("COMPUTE_TYPE"),
-            cpu_threads=os.environ.get("CPU_THREADS"),
-            num_workers=os.environ.get("NUM_WORKERS"),
+            cpu_threads=int(os.environ.get("CPU_THREADS", 0)),
+            num_workers=int(os.environ.get("NUM_WORKERS", 1)),
             download_root=os.environ.get("DOWNLOAD_ROOT"),
         )
         if (
